@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Chat</title>
+    <link href="{{ url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <style>
+        #chatHistoryContainer {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #chatHistory {
+            max-height: 100%;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <!-- Chat History -->
+        <div class="col-lg-8 col-md-12 order-md-2">
+            <div class="card mb-4" id="chatHistoryContainer">
+                <div class="card-header">Chat History</div>
+                <div class="card-body" id="chatHistory">
+                    <ul class="list-group">
+                        {% for i in range(gpt_q_list|length) %}
+                            <li class="list-group-item">
+                                <strong>Question:</strong> {{ gpt_q_list[i] }} <br>
+                                <strong>Response:</strong>
+                                <pre>{{ gpt_r_list[i] | e }}</pre>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="col-lg-4 col-md-12 order-md-1">
+            <div class="card">
+                <div class="card-header">FlopGPT Chat</div>
+                <div class="card-body">
+                    <p><strong>Current Role:</strong> {{ current_role }}</p>
+                    <form action="/" method="post">
+                        <div class="form-group">
+                            <label for="role">Role:</label>
+                            <input type="text" class="form-control" id="role" name="role" placeholder="{{ current_role or 'Enter role' }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="question">Question:</label>
+                            <textarea class="form-control" id="question" name="question" rows="2" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <a href="{{ url_for('clear_lists') }}" class="btn btn-danger ml-2">Clear Chat History</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='jquery-3.5.1.slim.min.js') }}"></script>
+<script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<script>
+    var chatHistory = document.getElementById("chatHistory");
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+</script>
+</body>
+</html>
