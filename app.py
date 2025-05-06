@@ -1,5 +1,3 @@
-# app.py
-# -*- coding: utf-8 -*-
 import os
 import re
 import openai
@@ -18,28 +16,43 @@ gpt_q_list = []
 gpt_role = ''
 history = []
 
-def extract_code_block(content):
-    match = re.search(r"```python(.*?)```", content, re.DOTALL)
-    return match.group(1).strip() if match else content.strip()
+def split_response_into_blocks(response):
+    languages = ['python', 'java', 'sql', 'javascript', 'html', 'css']
+    blocks = []
+    pattern = r'```(\w+)\n(.*?)```'
+    matches = list(re.finditer(pattern, response, re.DOTALL))
+
+    last_index = 0
+    for match in matches:
+        lang = match.group(1)
+        code = match.group(2)
+        start, end = match.span()
+
+        # Add any text before the code block
+        if start > last_index:
+            text_part = response[last_index:start]
+            blocks.append({'type': 'text', 'value': text_part})
+
+        blocks.append({'type': 'code', 'lang': lang, 'value': code})
+        last_index = end
+
+    # Add any text remaining after last code block
+    if last_index < len(response):
+        blocks.append({'type': 'text', 'value': response[last_index:]})
+
+    return blocks
 
 def openai_req(system_content, user_content):
     global history
 
-    messages = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content":  user_content}
-        ]
-    if history != []:
-        messages = [
-        {"role": "system", "content": system_content}
-        ]
-        messages = messages + history
-        messages = messages + [{"role": "user", "content":  user_content}]
+    if history:
+        messages = [{"role": "system", "content": system_content}] + history + [{"role": "user", "content": user_content}]
     else:
         messages = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content":  user_content}
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_content}
         ]
+
     completion = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=messages
@@ -47,10 +60,10 @@ def openai_req(system_content, user_content):
 
     content = completion.choices[0].message.content
     history = [
-        {"role": "user", "content":  user_content},
-        { "role": "assistant", "content": content }
-        ]
-    return extract_code_block(content)
+        {"role": "user", "content": user_content},
+        {"role": "assistant", "content": content}
+    ]
+    return split_response_into_blocks(content)
 
 @app.route('/auth', methods=['GET', 'POST'])
 def auth():
@@ -78,19 +91,23 @@ def index():
         return redirect(url_for('auth'))
 
     if request.method == 'POST':
-        if gpt_role == '' or request.form['role']:
-            gpt_role = request.form['role']
-        gpt_q = request.form['question']
-        gpt_q_list.append(gpt_q)
-        gpt_r_list.append(openai_req(gpt_role, gpt_q))
+        role = request.form['role']
+        question = request.form['question']
+
+        if gpt_role == '' or role:
+            gpt_role = role
+
+        gpt_q_list.append(question)
+        gpt_r_list.append(openai_req(gpt_role, question))
 
     return render_template('index.html', gpt_q_list=gpt_q_list, gpt_r_list=gpt_r_list, current_role=gpt_role)
 
 @app.route('/clear')
 def clear_lists():
-    global gpt_r_list, gpt_q_list
+    global gpt_r_list, gpt_q_list, history
     gpt_r_list.clear()
     gpt_q_list.clear()
+    history.clear()
     return redirect(url_for('index'))
 
 if __name__ == '__main__':

@@ -34,14 +34,13 @@
                             <li class="list-group-item">
                                 <strong>Question:</strong> {{ gpt_q_list[i] }} <br>
                                 <strong>Response:</strong>
-                                {% set lang = 'plaintext' %}
-{% if '```python' in gpt_r_list[i] %}{% set lang = 'python' %}
-{% elif '```java' in gpt_r_list[i] %}{% set lang = 'java' %}
-{% elif '```sql' in gpt_r_list[i] %}{% set lang = 'sql' %}
-{% elif '```javascript' in gpt_r_list[i] %}{% set lang = 'javascript' %}
-{% elif '```html' in gpt_r_list[i] %}{% set lang = 'html' %}
-{% elif '```css' in gpt_r_list[i] %}{% set lang = 'css' %}{% endif %}
-<pre><code class="language-{{ lang }}">{{ gpt_r_list[i] | e }}</code></pre>
+                                {% for block in gpt_r_list[i] %}
+                                    {% if block.type == 'code' %}
+                                        <pre><code class="language-{{ block.lang }}">{{ block.value | e }}</code></pre>
+                                    {% else %}
+                                        <pre><code class="language-plaintext">{{ block.value | e }}</code></pre>
+                                    {% endif %}
+                                {% endfor %}
                             </li>
                         {% endfor %}
                     </ul>
