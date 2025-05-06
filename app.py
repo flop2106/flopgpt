@@ -16,20 +16,40 @@ app.secret_key = os.environ.get('FLASK_TOKEN')
 gpt_r_list = []
 gpt_q_list = []
 gpt_role = ''
+history = []
 
 def extract_code_block(content):
     match = re.search(r"```python(.*?)```", content, re.DOTALL)
     return match.group(1).strip() if match else content.strip()
 
 def openai_req(system_content, user_content):
+    global history
+
+    messages = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content":  user_content}
+        ]
+    if history != []:
+        messages = [
+        {"role": "system", "content": system_content}
+        ]
+        messages = messages + history
+        messages = messages + [{"role": "user", "content":  user_content}]
+    else:
+        messages = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content":  user_content}
+        ]
     completion = openai.ChatCompletion.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_content},
-            {"role": "user", "content":  user_content}
-        ]
+        messages=messages
     )
+
     content = completion.choices[0].message.content
+    history = [
+        {"role": "user", "content":  user_content},
+        { "role": "assistant", "content": content }
+        ]
     return extract_code_block(content)
 
 @app.route('/auth', methods=['GET', 'POST'])
